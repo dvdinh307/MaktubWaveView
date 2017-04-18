@@ -1,15 +1,17 @@
 package wave.maktub.maktubwaveview;
 
+import android.Manifest;
+import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.media.audiofx.Visualizer;
 import android.os.Bundle;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
+import android.support.v4.content.ContextCompat;
 import android.view.View;
 import android.widget.ProgressBar;
-
-import java.io.IOException;
 
 import wave.maktub.maktubwave.MaktubView;
 
@@ -18,6 +20,7 @@ public class MainWaveActivity extends FragmentActivity {
     private MediaPlayer mMediaPlayer;
     private MaktubView mWave;
     private ProgressBar mPrgLoading;
+    private final int MY_PERMISSIONS_REQUEST_RECORD_AUDIO = 11;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -26,14 +29,8 @@ public class MainWaveActivity extends FragmentActivity {
         mWave = (MaktubView) findViewById(R.id.wave);
         mPrgLoading = (ProgressBar) findViewById(R.id.progressBar);
         if (mMediaPlayer == null)
-            mMediaPlayer = new MediaPlayer();
+            mMediaPlayer = MediaPlayer.create(MainWaveActivity.this , R.raw.vogia);
         mMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-        try {
-            String link = "http://www117.zippyshare.com/music/yM1PHPZ2/0/[NhacDJ.vn] - Nonstop - Viet Mix - Khi Co Don Em Nghi Den Ai - HPBD Cong Cha Dia - DJ KienZ Mix [NhacDJ.vn].mp3".replace(" " , "%20");
-            mMediaPlayer.setDataSource(link);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
         mMediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
             @Override
             public void onPrepared(MediaPlayer mediaPlayer) {
@@ -41,7 +38,22 @@ public class MainWaveActivity extends FragmentActivity {
                 mMediaPlayer.start();
             }
         });
+        // Android >= 6.0
+        if (ContextCompat.checkSelfPermission(MainWaveActivity.this,
+                Manifest.permission.RECORD_AUDIO)
+                != PackageManager.PERMISSION_GRANTED) {
+            if (ActivityCompat.shouldShowRequestPermissionRationale(MainWaveActivity.this,
+                    Manifest.permission.READ_CONTACTS)) {
+                initVisualizer();
+            } else {
+                ActivityCompat.requestPermissions(MainWaveActivity.this,
+                        new String[]{Manifest.permission.RECORD_AUDIO},
+                        MY_PERMISSIONS_REQUEST_RECORD_AUDIO);
+            }
+        }
+    }
 
+    private void initVisualizer() {
         int audioSessionID = mMediaPlayer.getAudioSessionId();
         mVisualizer = new Visualizer(audioSessionID);
         mVisualizer.setCaptureSize(Visualizer.getCaptureSizeRange()[1]);
@@ -73,6 +85,23 @@ public class MainWaveActivity extends FragmentActivity {
             }
         }, Visualizer.getMaxCaptureRate() / 2, true, true);
         mVisualizer.setEnabled(true);
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
+        switch (requestCode) {
+            case MY_PERMISSIONS_REQUEST_RECORD_AUDIO: {
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    // permission was granted, yay! Do the
+                    // contacts-related task you need to do.
+                    initVisualizer();
+                } else {
+
+                }
+                return;
+            }
+        }
     }
 
 
